@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Scriptorium - Fichamento inteligente por tags</title>
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <style>
+    :root {
+      --bg: #F7F1EA;
+      --card: #FFF9F2;
+      --card-2: #F2E5D6;
+      --primary: #6F4E37;
+      --primary-dark: #3E2A1F;
+      --primary-mid: #9C6B43;
+      --gold: #D7B98E;
+      --sand: #E8D8C3;
+      --text: #2C211B;
+      --muted: #7A6658;
+      --success: #6E8B5E;
+      --danger: #A85743;
+      --line: rgba(62, 42, 31, .14);
+      --shadow: 0 16px 40px rgba(62, 42, 31, .12);
+      --shadow-soft: 0 10px 24px rgba(62, 42, 31, .08);
+      --r: 18px;
+      --r-sm: 12px;
+      --gap: 14px;
+      --tap: 44px;
+      color-scheme: light;
+    }
+    [data-theme="dark"] {
+      --bg: #17110D;
+      --card: #241912;
+      --card-2: #302218;
+      --primary: #D7B98E;
+      --primary-dark: #F5E3CC;
+      --primary-mid: #B9875C;
+      --gold: #A77B50;
+      --sand: #3C2A1F;
+      --text: #F4E8DA;
+      --muted: #C1A996;
+      --success: #9DBB86;
+      --danger: #D48671;
+      --line: rgba(245, 227, 204, .15);
+      --shadow: 0 16px 42px rgba(0, 0, 0, .35);
+      --shadow-soft: 0 10px 26px rgba(0, 0, 0, .22);
+      color-scheme: dark;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: "Google Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at 20% -10%, rgba(215,185,142,.28), transparent 36%), linear-gradient(180deg, var(--bg), color-mix(in srgb, var(--bg) 86%, var(--sand)));
+      color: var(--text);
+      min-height: 100vh;
+    }
+    button, input, textarea, select { font: inherit; }
+    button { border: 0; cursor: pointer; }
+    :focus-visible { outline: 3px solid color-mix(in srgb, var(--gold) 70%, white); outline-offset: 2px; }
+    .app { width: min(1180px, 100%); margin: 0 auto; padding: 18px 14px 104px; }
+    header {
+      position: sticky; top: 0; z-index: 20; margin: -18px -14px 14px; padding: 16px 14px 12px;
+      background: color-mix(in srgb, var(--bg) 86%, transparent); backdrop-filter: blur(18px); border-bottom: 1px solid var(--line);
+    }
+    .header-inner { width: min(1180px, 100%); margin: 0 auto; display: flex; align-items: center; gap: 12px; }
+    .brand { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
+    .brand-mark {
+      width: 44px; height: 44px; display: grid; place-items: center; border-radius: 14px; color: #FFF9F2;
+      background: linear-gradient(145deg, var(--primary-dark), var(--primary-mid)); box-shadow: var(--shadow-soft); flex: none;
+    }
+    .brand h1 { margin: 0; font-size: clamp(1.35rem, 5vw, 2rem); letter-spacing: 0; line-height: 1; }
+    .brand p { margin: 4px 0 0; color: var(--muted); font-size: .88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .header-actions { display: flex; gap: 8px; }
+    .icon-btn, .btn, .chip, .tab, .fab { min-height: var(--tap); transition: transform .18s ease, background .18s ease, border-color .18s ease, box-shadow .18s ease; }
+    .icon-btn {
+      width: var(--tap); display: grid; place-items: center; border-radius: 14px; color: var(--primary-dark);
+      background: var(--card); border: 1px solid var(--line); box-shadow: var(--shadow-soft);
+    }
+    .icon-btn:hover, .btn:hover, .tab:hover, .fab:hover { transform: translateY(-1px); }
+    .toolbar { display: grid; gap: 10px; margin: 16px 0; }
+    .searchbox { position: relative; }
+    .searchbox i { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 1.15rem; }
+    input, textarea, select {
+      width: 100%; border: 1px solid var(--line); border-radius: 14px; background: var(--card); color: var(--text);
+      padding: 12px 13px; box-shadow: inset 0 1px 0 rgba(255,255,255,.2);
+    }
+    .searchbox input { padding-left: 42px; min-height: 50px; }
+    textarea { min-height: 110px; resize: vertical; }
+    .filters, .sort-row { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    .active-filter {
+      display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 12px;
+      border: 1px dashed var(--primary-mid); color: var(--primary-dark); border-radius: 14px;
+      background: color-mix(in srgb, var(--gold) 17%, var(--card)); font-size: .9rem;
+    }
+    .tabs { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 8px; scrollbar-width: none; }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab {
+      flex: none; display: inline-flex; align-items: center; justify-content: center; gap: 7px; border-radius: 999px;
+      padding: 0 14px; background: var(--card); color: var(--muted); border: 1px solid var(--line); box-shadow: var(--shadow-soft); white-space: nowrap;
+    }
+    .tab.active { color: #FFF9F2; background: var(--primary); border-color: var(--primary); }
+    [data-theme="dark"] .tab.active { color: #17110D; }
+    .grid { display: grid; gap: var(--gap); }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 15px; box-shadow: var(--shadow-soft); }
+    .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+    .card h2, .card h3 { margin: 0; line-height: 1.2; letter-spacing: 0; }
+    .card h2 { font-size: 1.05rem; }
+    .card h3 { font-size: 1rem; }
+    .meta, .muted { color: var(--muted); font-size: .9rem; }
+    .meta { display: flex; flex-wrap: wrap; gap: 7px 10px; margin-top: 8px; }
+    .note-preview { margin: 10px 0 0; color: var(--text); line-height: 1.45; }
+    .actions { display: flex; gap: 7px; flex-wrap: wrap; justify-content: flex-end; }
+    .mini-btn {
+      min-height: 36px; display: inline-flex; align-items: center; gap: 5px; padding: 0 10px; border-radius: 11px;
+      background: var(--card-2); color: var(--primary-dark); border: 1px solid var(--line);
+    }
+    .danger { color: var(--danger); }
+    .success { color: var(--success); }
+    .btn {
+      display: inline-flex; justify-content: center; align-items: center; gap: 8px; border-radius: 14px; padding: 0 15px;
+      color: #FFF9F2; background: var(--primary); box-shadow: var(--shadow-soft);
+    }
+    [data-theme="dark"] .btn { color: #17110D; }
+    .btn.secondary { color: var(--primary-dark); background: var(--card-2); border: 1px solid var(--line); box-shadow: none; }
+    .btn.danger-bg { background: var(--danger); color: #fff; }
+    .chip-row { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 11px; }
+    .chip {
+      display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+      padding: 7px 10px; background: color-mix(in srgb, var(--tag-color, var(--gold)) 22%, var(--card));
+      color: color-mix(in srgb, var(--tag-color, var(--primary-dark)) 72%, var(--text)); font-size: .82rem; line-height: 1;
+    }
+    .chip button { width: 20px; height: 20px; border-radius: 999px; background: rgba(0,0,0,.08); color: inherit; display: grid; place-items: center; }
+    .empty { text-align: center; padding: 38px 18px; border: 1px dashed var(--line); border-radius: var(--r); background: color-mix(in srgb, var(--card) 70%, transparent); color: var(--muted); }
+    .empty i { display: block; font-size: 2rem; margin-bottom: 8px; color: var(--primary-mid); }
+    .fab {
+      position: fixed; right: 18px; bottom: 18px; z-index: 50; width: 62px; height: 62px; display: grid; place-items: center;
+      border-radius: 22px; color: #FFF9F2; background: linear-gradient(145deg, var(--primary), var(--primary-dark));
+      box-shadow: 0 18px 44px rgba(62,42,31,.32); font-size: 1.4rem;
+    }
+    .sheet, .modal-backdrop { position: fixed; inset: 0; display: none; z-index: 60; background: rgba(28,18,12,.42); backdrop-filter: blur(6px); }
+    .sheet.open, .modal-backdrop.open { display: block; }
+    .sheet-panel {
+      position: absolute; left: 10px; right: 10px; bottom: 10px; background: var(--card); border: 1px solid var(--line);
+      border-radius: 24px; box-shadow: var(--shadow); padding: 12px;
+    }
+    .sheet-panel button { width: 100%; justify-content: flex-start; margin: 5px 0; }
+    .modal {
+      position: absolute; inset: auto 10px 10px; max-height: min(86vh, 760px); overflow: auto; background: var(--card);
+      border: 1px solid var(--line); border-radius: 24px; box-shadow: var(--shadow); padding: 16px;
+    }
+    .modal-header {
+      position: sticky; top: -16px; z-index: 2; display: flex; justify-content: space-between; align-items: center; gap: 12px;
+      padding: 4px 0 12px; margin-bottom: 8px; background: var(--card); border-bottom: 1px solid var(--line);
+    }
+    .modal-header h2 { margin: 0; font-size: 1.15rem; }
+    .form { display: grid; gap: 12px; }
+    label { display: grid; gap: 6px; color: var(--muted); font-size: .88rem; }
+    .two { display: grid; grid-template-columns: 1fr; gap: 12px; }
+    .form-actions { display: flex; gap: 9px; justify-content: flex-end; flex-wrap: wrap; padding-top: 5px; }
+    .tag-picker { display: grid; gap: 9px; padding: 10px; border: 1px solid var(--line); border-radius: 16px; background: color-mix(in srgb, var(--card-2) 45%, transparent); }
+    .tag-options { max-height: 150px; overflow: auto; display: flex; flex-wrap: wrap; gap: 7px; }
+    .tag-options .chip { cursor: pointer; }
+    .tag-options .chip.selected { box-shadow: 0 0 0 2px var(--primary-mid); }
+    .tag-group-title { margin: 22px 0 10px; color: var(--primary-dark); font-size: .95rem; font-weight: 700; }
+    .author-row { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+    .toast {
+      position: fixed; left: 14px; right: 14px; bottom: 92px; z-index: 80; display: none; padding: 13px 14px;
+      border-radius: 15px; background: var(--primary-dark); color: #FFF9F2; box-shadow: var(--shadow);
+    }
+    .toast.show { display: block; animation: pop .22s ease both; }
+    @keyframes pop { from { transform: translateY(8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    @media (min-width: 720px) {
+      .app { padding-inline: 22px; }
+      header { margin-inline: -22px; padding-inline: 22px; }
+      .toolbar { grid-template-columns: 1.4fr .9fr; align-items: start; }
+      .filters { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .sort-row { grid-template-columns: 1fr auto; }
+      .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .modal { width: min(720px, calc(100vw - 28px)); inset: 50% auto auto 50%; transform: translate(-50%, -50%); }
+      .sheet-panel { width: 360px; left: auto; }
+      .toast { left: auto; right: 22px; width: min(390px, calc(100vw - 44px)); }
+    }
+    @media (min-width: 1040px) {
+      .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .grid.detail-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+  <div class="app" id="app">
+    <header>
+      <div class="header-inner">
+        <div class="brand">
+          <div class="brand-mark"><i class="ph ph-book-open">📖</i></div>
+          <div>
+            <h1>Scriptorium</h1>
+            <p>Fichamento inteligente por tags</p>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button class="icon-btn" id="themeBtn" title="Alternar tema"><i class="ph ph-moon">☾</i></button>
+          <button class="icon-btn" id="exportBtn" title="Exportar JSON"><i class="ph ph-download-simple">↓</i></button>
+          <button class="icon-btn" id="focusSearchBtn" title="Buscar"><i class="ph ph-magnifying-glass">⌕</i></button>
+        </div>
+      </div>
+    </header>
+    <main>
+      <section class="toolbar">
+        <div class="searchbox"><i class="ph ph-magnifying-glass">⌕</i><input id="searchInput" type="search" placeholder="Buscar livros, autores, fichas, citações e tags..." /></div>
+        <div class="sort-row"><select id="sortSelect" title="Ordenação"></select><button class="btn secondary" id="clearFiltersBtn"><i class="ph ph-funnel-simple">⚱</i> Limpar filtros</button></div>
+      </section>
+      <section class="filters">
+        <select id="filterAuthor"><option value="">Todos os autores</option></select>
+        <select id="filterGenre"><option value="">Todos os gêneros</option></select>
+        <select id="filterSubgenre"><option value="">Todos os subgêneros</option></select>
+        <select id="filterStatus"><option value="">Todos os status</option></select>
+        <select id="filterBook"><option value="">Todos os livros</option></select>
+        <select id="filterType"><option value="">Todos os tipos</option></select>
+        <select id="filterTag"><option value="">Todas as tags</option></select>
+      </section>
+      <div id="activeFilters" style="margin:12px 0;"></div>
+      <nav class="tabs" id="tabs"></nav>
+      <section id="content"></section>
+    </main>
+  </div>
+  <button class="fab" id="fab" title="Adicionar"><i class="ph ph-plus">+</i></button>
+  <div class="sheet" id="sheet">
+    <div class="sheet-panel">
+      <button class="btn secondary" data-action="book"><i class="ph ph-book-open">📖</i> Adicionar livro</button>
+      <button class="btn secondary" data-action="note"><i class="ph ph-note-pencil">✎</i> Adicionar ficha</button>
+      <button class="btn secondary" data-action="tag"><i class="ph ph-tag">#</i> Criar tag personalizada</button>
+      <button class="btn secondary" data-action="import"><i class="ph ph-upload-simple">↑</i> Importar dados</button>
+      <button class="btn danger-bg" data-action="close">Fechar</button>
+    </div>
+  </div>
+  <div class="modal-backdrop" id="modalRoot"></div>
+  <input id="importInput" type="file" accept="application/json,.json" hidden />
+  <div class="toast" id="toast"></div>
+  <script>
+    const STORAGE_KEY = "scriptorium.v1";
+    const $ = (s, root = document) => root.querySelector(s);
+    const now = () => new Date().toISOString();
+    const uid = () => crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random());
+    const norm = (v) => String(v || "").trim().toLowerCase();
+    const short = (v, n = 150) => String(v || "").length > n ? String(v).slice(0, n - 1) + "..." : String(v || "");
+    const esc = (v) => String(v ?? "").replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[m]));
+    const statuses = ["Quero ler", "Lendo", "Pausado", "Concluido", "Abandonado", "Relendo", "Revisar depois"];
+    const noteTypes = ["Citacao", "Resumo", "Ideia central", "Insight", "Aplicacao pratica", "Pergunta", "Critica", "Definicao", "Referencia biblica", "Oracao", "Tese do autor", "Argumento importante", "Comparacao", "Conceito-chave", "Para revisar"];
+    const genres = ["Cristao", "Teologia", "Biblia", "Devocional", "Espiritualidade", "Historia", "Biografia", "Filosofia", "Psicologia", "Educacao", "Lideranca", "Ministerio", "Ficcao", "Classicos", "Sociologia", "Ciencia", "Negocios", "Autoaperfeicoamento"];
+    const subgenres = ["Teologia Sistematica", "Teologia Biblica", "Teologia Historica", "Teologia Pratica", "Teologia Pastoral", "Apologetica", "Hermeneutica", "Exegese", "Doutrina de Deus", "Cristologia", "Pneumatologia / Espirito Santo", "Soteriologia / Salvacao", "Eclesiologia / Igreja", "Escatologia", "Etica Crista", "Cosmovisao Crista", "Discipulado", "Missoes", "Evangelismo", "Oracao", "Vida Devocional", "Santificacao", "Historia da Igreja", "Patristica", "Reforma Protestante", "Puritanos", "Pentecostal / Carismatico", "Avivamento", "Pregacao", "Aconselhamento Biblico", "Familia Crista", "Lideranca Crista", "Ministerio Pastoral"];
+    let state = loadState();
+    function seedState() {
+      const transverse = ["Graca", "Fe", "Arrependimento", "Alianca", "Reino de Deus", "Evangelho", "Cruz", "Ressurreicao", "Identidade em Cristo", "Espirito Santo", "Igreja", "Escrituras", "Pecado", "Sofrimento", "Esperanca", "Amor", "Justica", "Sabedoria", "Adoracao", "Comunhao", "Obediencia", "Chamado", "Maturidade", "Carater", "Humildade"];
+      const tagNames = [...genres.map(n => [n, "Genero", "#9C6B43"]), ...subgenres.map(n => [n, "Subgenero cristao", "#6F4E37"]), ...noteTypes.map(n => [n, "Tipo de ficha", "#A77B50"]), ...transverse.map(n => [n, "Tema transversal", "#6E8B5E"]), ...statuses.map(n => [n, "Status de leitura", "#D7B98E"])];
+      const tags = tagNames.map(([nome, grupo, cor]) => ({ id: uid(), nome, grupo, cor, descricao: "", criadaEm: now(), atualizadaEm: now() }));
+      const idByName = (name) => tags.find(t => t.nome === name).id;
+      const books = [
+        { id: uid(), titulo: "Cristianismo Puro e Simples", autor: "C. S. Lewis", genero: "Cristao", subgenero: "Apologetica", status: "Lendo", nota: "Argumentacao clara sobre fe, moralidade e esperanca crista.", tags: [idByName("Cristao"), idByName("Apologetica"), idByName("Fe")], criadoEm: now(), atualizadoEm: now() },
+        { id: uid(), titulo: "Conhecimento de Deus", autor: "J. I. Packer", genero: "Teologia", subgenero: "Doutrina de Deus", status: "Quero ler", nota: "Para estudar atributos divinos e devocao com profundidade.", tags: [idByName("Teologia"), idByName("Doutrina de Deus"), idByName("Adoracao")], criadoEm: now(), atualizadoEm: now() }
+      ];
+      const notes = [
+        { id: uid(), livroId: books[0].id, tipo: "Insight", titulo: "Moralidade como sinal", paginaOuCapitulo: "Livro 1", conteudo: "Lewis parte da experiencia moral comum para abrir uma conversa acessivel sobre Deus.", citacao: "", tags: [idByName("Insight"), idByName("Fe")], favorito: true, criadoEm: now(), atualizadoEm: now() },
+        { id: uid(), livroId: books[1].id, tipo: "Para revisar", titulo: "Atributos divinos", paginaOuCapitulo: "Cap. 1", conteudo: "Separar fichas futuras por atributo: santidade, amor, justica, soberania e sabedoria.", citacao: "", tags: [idByName("Para revisar"), idByName("Sabedoria")], favorito: false, criadoEm: now(), atualizadoEm: now() }
+      ];
+      return { books, notes, tags, settings: { tema: "light", abaAtiva: "books", ordenacaoLivros: "recent", ordenacaoFichas: "recent", ordenacaoTags: "name" }, filters: { author: "", genre: "", subgenre: "", status: "", book: "", type: "", tag: "" }, search: "" };
+    }
+    function loadState() { try { const raw = localStorage.getItem(STORAGE_KEY); return raw ? { ...seedState(), ...JSON.parse(raw) } : seedState(); } catch { return seedState(); } }
+    function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+    function toast(msg) { const el = $("#toast"); el.textContent = msg; el.classList.add("show"); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove("show"), 3000); }
+    function icon(name, fallback = "") { return `<i class="ph ph-${name}">${fallback}</i>`; }
+    function getBook(id) { return state.books.find(b => b.id === id); }
+    function getTag(id) { return state.tags.find(t => t.id === id); }
+    function tagUseCount(id) { return state.books.filter(b => b.tags.includes(id)).length + state.notes.filter(n => n.tags.includes(id)).length; }
+    function tagChips(ids) { return `<div class="chip-row">${(ids || []).map(id => { const t = getTag(id); return t ? `<span class="chip" style="--tag-color:${esc(t.cor)}">${icon("tag", "#")} ${esc(t.nome)}</span>` : ""; }).join("")}</div>`; }
+    function searchableTextBook(b) { return norm(`${b.titulo} ${b.autor} ${b.genero} ${b.subgenero} ${b.status} ${b.nota} ${b.tags.map(id => getTag(id)?.nome).join(" ")} ${state.notes.filter(n => n.livroId === b.id).map(n => `${n.titulo} ${n.conteudo} ${n.citacao}`).join(" ")}`); }
+    function searchableTextNote(n) { const b = getBook(n.livroId); return norm(`${n.titulo} ${n.tipo} ${n.paginaOuCapitulo} ${n.conteudo} ${n.citacao} ${b?.titulo} ${b?.autor} ${n.tags.map(id => getTag(id)?.nome).join(" ")}`); }
+    function passesCommon(item, type) {
+      const f = state.filters, b = type === "book" ? item : getBook(item.livroId);
+      if (f.author && b?.autor !== f.author) return false;
+      if (f.genre && b?.genero !== f.genre) return false;
+      if (f.subgenre && b?.subgenero !== f.subgenre) return false;
+      if (f.status && b?.status !== f.status) return false;
+      if (f.book && (type === "book" ? item.id : item.livroId) !== f.book) return false;
+      if (f.type && (type !== "note" || item.tipo !== f.type)) return false;
+      if (f.tag && !(item.tags || []).includes(f.tag)) return false;
+      const q = norm(state.search);
+      return q ? (type === "book" ? searchableTextBook(item).includes(q) : searchableTextNote(item).includes(q)) : true;
+    }
+    function filteredBooks() {
+      let arr = state.books.filter(b => passesCommon(b, "book")), sort = state.settings.ordenacaoLivros;
+      arr.sort((a,b) => sort === "title" ? a.titulo.localeCompare(b.titulo) : sort === "author" ? a.autor.localeCompare(b.autor) : sort === "status" ? a.status.localeCompare(b.status) : sort === "genre" ? a.genero.localeCompare(b.genero) : sort === "subgenre" ? a.subgenero.localeCompare(b.subgenero) : sort === "updated" ? b.atualizadoEm.localeCompare(a.atualizadoEm) : b.criadoEm.localeCompare(a.criadoEm));
+      return arr;
+    }
+    function filteredNotes(onlyFav = false) {
+      let arr = state.notes.filter(n => (!onlyFav || n.favorito) && passesCommon(n, "note")), sort = state.settings.ordenacaoFichas;
+      arr.sort((a,b) => sort === "title" ? a.titulo.localeCompare(b.titulo) : sort === "book" ? (getBook(a.livroId)?.titulo || "").localeCompare(getBook(b.livroId)?.titulo || "") : sort === "type" ? a.tipo.localeCompare(b.tipo) : sort === "favorite" ? Number(b.favorito) - Number(a.favorito) : sort === "updated" ? b.atualizadoEm.localeCompare(a.atualizadoEm) : b.criadoEm.localeCompare(a.criadoEm));
+      return arr;
+    }
+    function filteredTags() {
+      const q = norm(state.search);
+      let arr = state.tags.filter(t => (!q || norm(`${t.nome} ${t.grupo} ${t.cor} ${t.descricao}`).includes(q)) && (!state.filters.tag || t.id === state.filters.tag));
+      const sort = state.settings.ordenacaoTags;
+      arr.sort((a,b) => sort === "group" ? a.grupo.localeCompare(b.grupo) || a.nome.localeCompare(b.nome) : sort === "most" ? tagUseCount(b.id) - tagUseCount(a.id) || a.nome.localeCompare(b.nome) : sort === "least" ? tagUseCount(a.id) - tagUseCount(b.id) || a.nome.localeCompare(b.nome) : sort === "recent" ? b.criadaEm.localeCompare(a.criadaEm) : sort === "color" ? a.cor.localeCompare(b.cor) : a.nome.localeCompare(b.nome));
+      return arr;
+    }
+    function render() {
+      document.documentElement.dataset.theme = state.settings.tema;
+      $("#themeBtn").innerHTML = state.settings.tema === "dark" ? icon("sun", "☀") : icon("moon", "☾");
+      $("#searchInput").value = state.search;
+      renderTabs(); renderFilters(); renderSort(); renderActiveFilters(); renderContent(); save();
+    }
+    function renderTabs() {
+      const tabs = [["books", "book-open", "Livros"], ["notes", "note-pencil", "Fichas"], ["favorites", "star", "Favoritos"], ["tags", "tag", "Tags"], ["authors", "user", "Autores"]];
+      $("#tabs").innerHTML = tabs.map(([id, ic, label]) => `<button class="tab ${state.settings.abaAtiva === id ? "active" : ""}" data-tab="${id}">${icon(ic)} ${label}</button>`).join("");
+    }
+    function opt(values, selected, first) { return `<option value="">${first}</option>` + [...new Set(values.filter(Boolean))].sort().map(v => `<option ${v === selected ? "selected" : ""}>${esc(v)}</option>`).join(""); }
+    function renderFilters() {
+      $("#filterAuthor").innerHTML = opt(state.books.map(b => b.autor), state.filters.author, "Todos os autores");
+      $("#filterGenre").innerHTML = opt([...genres, ...state.books.map(b => b.genero)], state.filters.genre, "Todos os generos");
+      $("#filterSubgenre").innerHTML = opt([...subgenres, ...state.books.map(b => b.subgenero)], state.filters.subgenre, "Todos os subgeneros");
+      $("#filterStatus").innerHTML = opt(statuses, state.filters.status, "Todos os status");
+      $("#filterBook").innerHTML = `<option value="">Todos os livros</option>` + state.books.slice().sort((a,b) => a.titulo.localeCompare(b.titulo)).map(b => `<option value="${b.id}" ${b.id === state.filters.book ? "selected" : ""}>${esc(b.titulo)}</option>`).join("");
+      $("#filterType").innerHTML = opt(noteTypes, state.filters.type, "Todos os tipos");
+      $("#filterTag").innerHTML = `<option value="">Todas as tags</option>` + state.tags.slice().sort((a,b) => a.nome.localeCompare(b.nome)).map(t => `<option value="${t.id}" ${t.id === state.filters.tag ? "selected" : ""}>${esc(t.nome)}</option>`).join("");
+    }
+    function renderSort() {
+      const tab = state.settings.abaAtiva;
+      const options = tab === "tags" ? [["name","Nome"],["group","Grupo/categoria"],["most","Mais usadas"],["least","Menos usadas"],["recent","Criadas recentemente"],["color","Cor"]] : tab === "notes" || tab === "favorites" ? [["recent","Mais recentes"],["updated","Atualizadas recentemente"],["title","Titulo"],["book","Livro"],["type","Tipo"],["favorite","Favorito"]] : [["recent","Mais recentes"],["updated","Atualizados recentemente"],["title","Titulo"],["author","Autor"],["status","Status"],["genre","Genero"],["subgenre","Subgenero"]];
+      const key = tab === "tags" ? "ordenacaoTags" : (tab === "notes" || tab === "favorites" ? "ordenacaoFichas" : "ordenacaoLivros");
+      $("#sortSelect").innerHTML = options.map(([v,l]) => `<option value="${v}" ${state.settings[key] === v ? "selected" : ""}>Ordenar: ${l}</option>`).join("");
+    }
+    function renderActiveFilters() {
+      const entries = [["Autor", state.filters.author], ["Genero", state.filters.genre], ["Subgenero", state.filters.subgenre], ["Status", state.filters.status], ["Livro", getBook(state.filters.book)?.titulo], ["Tipo", state.filters.type], ["Tag", getTag(state.filters.tag)?.nome]].filter(x => x[1]);
+      $("#activeFilters").innerHTML = entries.length ? `<div class="active-filter"><span>${icon("funnel-simple")} Filtros ativos: ${entries.map(([k,v]) => `${k}: ${esc(v)}`).join(" · ")}</span><button class="mini-btn" id="clearFiltersInline">Limpar</button></div>` : "";
+    }
+    function renderContent() { const tab = state.settings.abaAtiva; if (tab === "books") return renderBooks(); if (tab === "notes") return renderNotes(false); if (tab === "favorites") return renderNotes(true); if (tab === "tags") return renderTags(); return renderAuthors(); }
+    function renderBooks() { const arr = filteredBooks(); $("#content").innerHTML = arr.length ? `<div class="grid">${arr.map(bookCard).join("")}</div>` : empty("book-open", "Nenhum livro encontrado. Use o botao + para cadastrar sua biblioteca."); }
+    function bookCard(b) {
+      return `<article class="card"><div class="card-top"><div><h2>${esc(b.titulo)}</h2><div class="meta"><span>${icon("user")} ${esc(b.autor)}</span><span>${esc(b.status || "Sem status")}</span></div></div><div class="actions"><button class="mini-btn" data-detail-book="${b.id}">${icon("book-open")} Detalhes</button><button class="mini-btn" data-edit-book="${b.id}">${icon("pencil-simple")} Editar</button><button class="mini-btn danger" data-del-book="${b.id}">${icon("trash")} Excluir</button></div></div><div class="meta"><span>${esc(b.genero || "Sem genero")}</span><span>${esc(b.subgenero || "Sem subgenero")}</span></div>${b.nota ? `<p class="note-preview">${esc(short(b.nota, 130))}</p>` : ""}${tagChips(b.tags)}</article>`;
+    }
+    function renderNotes(onlyFav) { const arr = filteredNotes(onlyFav); $("#content").innerHTML = arr.length ? `<div class="grid">${arr.map(noteCard).join("")}</div>` : empty(onlyFav ? "star" : "note-pencil", onlyFav ? "Nenhuma ficha favorita encontrada." : "Nenhuma ficha encontrada. Use o botao + para registrar uma leitura."); }
+    function noteCard(n) {
+      const b = getBook(n.livroId);
+      return `<article class="card"><div class="card-top"><div><h2>${n.favorito ? "★ " : ""}${esc(n.titulo || n.tipo)}</h2><div class="meta"><span>${icon("book-open")} ${esc(b?.titulo || "Livro removido")}</span><span>${esc(n.tipo)}</span>${n.paginaOuCapitulo ? `<span>${esc(n.paginaOuCapitulo)}</span>` : ""}</div></div><div class="actions"><button class="mini-btn" data-fav-note="${n.id}">${icon("star")} ${n.favorito ? "Desfavoritar" : "Favoritar"}</button><button class="mini-btn" data-edit-note="${n.id}">${icon("pencil-simple")} Editar</button><button class="mini-btn danger" data-del-note="${n.id}">${icon("trash")} Excluir</button></div></div><p class="note-preview">${esc(short(n.conteudo, 170))}</p>${n.citacao ? `<p class="muted">"${esc(short(n.citacao, 130))}"</p>` : ""}${tagChips(n.tags)}</article>`;
+    }
+    function renderTags() {
+      const arr = filteredTags();
+      if (!arr.length) { $("#content").innerHTML = empty("tag", "Nenhuma tag encontrada. Crie tags para organizar sua leitura."); return; }
+      const groups = arr.reduce((acc, t) => ((acc[t.grupo || "Sem grupo"] ||= []).push(t), acc), {});
+      $("#content").innerHTML = Object.entries(groups).map(([g, tags]) => `<h2 class="tag-group-title">${esc(g)}</h2><div class="grid">${tags.map(t => `<article class="card"><div class="card-top"><div><h3><span class="chip" style="--tag-color:${esc(t.cor)}">${icon("tag")} ${esc(t.nome)}</span></h3><div class="meta"><span>${tagUseCount(t.id)} uso(s)</span><span>${esc(t.cor)}</span></div></div><div class="actions"><button class="mini-btn" data-edit-tag="${t.id}">${icon("pencil-simple")} Editar</button><button class="mini-btn danger" data-del-tag="${t.id}">${icon("trash")} Excluir</button></div></div>${t.descricao ? `<p class="note-preview">${esc(t.descricao)}</p>` : ""}</article>`).join("")}</div>`).join("");
+    }
+    function renderAuthors() {
+      const q = norm(state.search), rows = [...new Set(state.books.map(b => b.autor).filter(Boolean))].filter(a => !q || norm(a).includes(q)).sort((a,b) => a.localeCompare(b));
+      $("#content").innerHTML = rows.length ? `<div class="grid">${rows.map(a => `<article class="card author-row"><div><h2>${icon("user")} ${esc(a)}</h2><p class="muted">${state.books.filter(b => b.autor === a).length} livro(s) cadastrado(s)</p></div><button class="mini-btn" data-author-filter="${esc(a)}">${icon("funnel-simple")} Ver livros</button></article>`).join("")}</div>` : empty("user", "Nenhum autor encontrado.");
+    }
+    function empty(ic, text) { return `<div class="empty">${icon(ic)}<strong>${esc(text)}</strong><p>Os dados ficam salvos apenas neste navegador.</p></div>`; }
+    function openModal(title, body) { $("#modalRoot").innerHTML = `<div class="modal"><div class="modal-header"><h2>${title}</h2><button class="icon-btn" data-close-modal title="Fechar">x</button></div>${body}</div>`; $("#modalRoot").classList.add("open"); }
+    function closeModal() { $("#modalRoot").classList.remove("open"); $("#modalRoot").innerHTML = ""; }
+    function tagPickerHtml() { return `<div class="tag-picker" data-tag-picker><input data-tag-search placeholder="Buscar tags ou digitar nova tag..." /><div class="chip-row" data-selected-tags></div><div class="tag-options" data-tag-options></div><button type="button" class="btn secondary" data-create-inline-tag>${icon("plus")} Criar tag pelo texto digitado</button></div>`; }
+    function hydrateTagPicker(root, selected, onChange) {
+      const search = $("[data-tag-search]", root), selectedBox = $("[data-selected-tags]", root), optionsBox = $("[data-tag-options]", root);
+      const draw = () => {
+        const q = norm(search.value);
+        selectedBox.innerHTML = selected.map(id => { const t = getTag(id); return t ? `<span class="chip" style="--tag-color:${esc(t.cor)}">${esc(t.nome)} <button type="button" data-remove-tag="${t.id}">x</button></span>` : ""; }).join("");
+        optionsBox.innerHTML = state.tags.filter(t => !q || norm(`${t.nome} ${t.grupo} ${t.descricao}`).includes(q)).sort((a,b) => a.nome.localeCompare(b.nome)).slice(0, 40).map(t => `<span class="chip ${selected.includes(t.id) ? "selected" : ""}" style="--tag-color:${esc(t.cor)}" data-pick-tag="${t.id}">${esc(t.nome)}</span>`).join("");
+      };
+      root.addEventListener("click", e => {
+        const pick = e.target.closest("[data-pick-tag]"), rem = e.target.closest("[data-remove-tag]"), create = e.target.closest("[data-create-inline-tag]");
+        if (pick) { const id = pick.dataset.pickTag; selected.includes(id) ? selected.splice(selected.indexOf(id), 1) : selected.push(id); onChange([...selected]); draw(); }
+        if (rem) { selected.splice(selected.indexOf(rem.dataset.removeTag), 1); onChange([...selected]); draw(); }
+        if (create) { const name = search.value.trim(); if (!name) return toast("Digite o nome da tag antes de criar."); const tag = createTagQuick(name); if (tag && !selected.includes(tag.id)) selected.push(tag.id); onChange([...selected]); search.value = ""; draw(); renderFilters(); }
+      });
+      search.addEventListener("input", draw); draw();
+    }
+    function createTagQuick(nome) {
+      const existing = state.tags.find(t => norm(t.nome) === norm(nome));
+      if (existing) { toast("Essa tag ja existe. Ela foi selecionada."); return existing; }
+      const tag = { id: uid(), nome, grupo: "Personalizadas", cor: "#9C6B43", descricao: "", criadaEm: now(), atualizadaEm: now() };
+      state.tags.push(tag); save(); toast("Tag criada."); return tag;
+    }
+    function openBookForm(id) {
+      const b = id ? getBook(id) : { titulo: "", autor: "", genero: "", subgenero: "", status: "Quero ler", nota: "", tags: [] };
+      openModal(id ? "Editar livro" : "Adicionar livro", `<form class="form" id="bookForm"><label>Titulo obrigatorio<input name="titulo" value="${esc(b.titulo)}" required /></label><label>Autor<input name="autor" value="${esc(b.autor)}" placeholder="Ex.: C. S. Lewis" /></label><div class="two"><label>Genero<input name="genero" list="genreList" value="${esc(b.genero)}" /></label><label>Subgenero<input name="subgenero" list="subgenreList" value="${esc(b.subgenero)}" /></label></div><label>Status<select name="status">${statuses.map(s => `<option ${b.status === s ? "selected" : ""}>${s}</option>`).join("")}</select></label><label>Nota curta<textarea name="nota">${esc(b.nota)}</textarea></label><label>Tags${tagPickerHtml()}</label><datalist id="genreList">${genres.map(g => `<option value="${esc(g)}">`).join("")}</datalist><datalist id="subgenreList">${subgenres.map(g => `<option value="${esc(g)}">`).join("")}</datalist><div class="form-actions"><button type="button" class="btn secondary" data-close-modal>Cancelar</button><button class="btn">${icon("book-open")} Salvar livro</button></div></form>`);
+      let selectedTags = [...(b.tags || [])]; hydrateTagPicker($("[data-tag-picker]"), selectedTags, v => selectedTags = v);
+      $("#bookForm").onsubmit = e => { e.preventDefault(); const fd = new FormData(e.target); const titulo = fd.get("titulo").trim(); let autor = fd.get("autor").trim(); if (!titulo) return toast("Informe o titulo do livro."); if (!autor && !confirm("Voce nao informou o autor. Deseja salvar como Autor desconhecido?")) return; if (!autor) autor = "Autor desconhecido"; const data = { titulo, autor, genero: fd.get("genero").trim(), subgenero: fd.get("subgenero").trim(), status: fd.get("status"), nota: fd.get("nota").trim(), tags: selectedTags, atualizadoEm: now() }; if (id) Object.assign(b, data); else state.books.push({ id: uid(), ...data, criadoEm: now() }); toast("Livro salvo."); closeModal(); render(); };
+    }
+    function openNoteForm(id) {
+      const n = id ? state.notes.find(x => x.id === id) : { livroId: state.filters.book || "", tipo: "Resumo", titulo: "", paginaOuCapitulo: "", conteudo: "", citacao: "", tags: [], favorito: false };
+      openModal(id ? "Editar ficha" : "Adicionar ficha", `<form class="form" id="noteForm"><label>Livro obrigatorio<select name="livroId"><option value="">Selecione um livro</option>${state.books.map(b => `<option value="${b.id}" ${n.livroId === b.id ? "selected" : ""}>${esc(b.titulo)} - ${esc(b.autor)}</option>`).join("")}</select></label><div class="two"><label>Tipo<select name="tipo">${noteTypes.map(t => `<option ${n.tipo === t ? "selected" : ""}>${t}</option>`).join("")}</select></label><label>Pagina ou capitulo<input name="paginaOuCapitulo" value="${esc(n.paginaOuCapitulo)}" /></label></div><label>Titulo da ficha<input name="titulo" value="${esc(n.titulo)}" placeholder="Ex.: Ideia central do capitulo" /></label><label>Conteudo obrigatorio<textarea name="conteudo">${esc(n.conteudo)}</textarea></label><label>Citacao<textarea name="citacao">${esc(n.citacao)}</textarea></label><label><span><input type="checkbox" name="favorito" ${n.favorito ? "checked" : ""} style="width:auto"> Favoritar ficha importante</span></label><label>Tags${tagPickerHtml()}</label><div class="form-actions"><button type="button" class="btn secondary" data-close-modal>Cancelar</button><button class="btn">${icon("note-pencil")} Salvar ficha</button></div></form>`);
+      let selectedTags = [...(n.tags || [])]; hydrateTagPicker($("[data-tag-picker]"), selectedTags, v => selectedTags = v);
+      $("#noteForm").onsubmit = e => { e.preventDefault(); const fd = new FormData(e.target); if (!fd.get("livroId")) return toast("Escolha um livro para vincular a ficha."); if (!fd.get("conteudo").trim()) return toast("Escreva o conteudo da ficha antes de salvar."); const data = { livroId: fd.get("livroId"), tipo: fd.get("tipo"), titulo: fd.get("titulo").trim() || fd.get("tipo"), paginaOuCapitulo: fd.get("paginaOuCapitulo").trim(), conteudo: fd.get("conteudo").trim(), citacao: fd.get("citacao").trim(), tags: selectedTags, favorito: fd.get("favorito") === "on", atualizadoEm: now() }; if (id) Object.assign(n, data); else state.notes.push({ id: uid(), ...data, criadoEm: now() }); toast("Ficha salva."); closeModal(); render(); };
+    }
+    function openTagForm(id) {
+      const t = id ? getTag(id) : { nome: "", grupo: "Personalizadas", cor: "#9C6B43", descricao: "" };
+      openModal(id ? "Editar tag" : "Criar tag personalizada", `<form class="form" id="tagForm"><label>Nome da tag obrigatorio<input name="nome" value="${esc(t.nome)}" /></label><label>Grupo/categoria<input name="grupo" value="${esc(t.grupo)}" placeholder="Ex.: Tema transversal" /></label><label>Cor<input name="cor" type="color" value="${esc(t.cor || "#9C6B43")}" /></label><label>Descricao opcional<textarea name="descricao">${esc(t.descricao)}</textarea></label><div class="form-actions"><button type="button" class="btn secondary" data-close-modal>Cancelar</button><button class="btn">${icon("tag")} Salvar tag</button></div></form>`);
+      $("#tagForm").onsubmit = e => { e.preventDefault(); const fd = new FormData(e.target); const nome = fd.get("nome").trim(); if (!nome) return toast("Informe o nome da tag."); const duplicate = state.tags.find(x => norm(x.nome) === norm(nome) && x.id !== id); if (duplicate) { if (confirm("Essa tag ja existe. Deseja usar a tag existente?")) closeModal(); return toast("Tag duplicada nao foi criada."); } const data = { nome, grupo: fd.get("grupo").trim() || "Personalizadas", cor: fd.get("cor"), descricao: fd.get("descricao").trim(), atualizadaEm: now() }; if (id) Object.assign(t, data); else state.tags.push({ id: uid(), ...data, criadaEm: now() }); toast("Tag salva."); closeModal(); render(); };
+    }
+    function openBookDetail(id) {
+      const b = getBook(id), notes = state.notes.filter(n => n.livroId === id);
+      openModal("Detalhe do livro", `<article class="card" style="box-shadow:none"><h2>${esc(b.titulo)}</h2><div class="meta"><span>${icon("user")} ${esc(b.autor)}</span><span>${esc(b.genero || "Sem genero")}</span><span>${esc(b.subgenero || "Sem subgenero")}</span><span>${esc(b.status || "Sem status")}</span></div>${b.nota ? `<p class="note-preview">${esc(b.nota)}</p>` : ""}${tagChips(b.tags)}</article><h2 class="tag-group-title">Fichas vinculadas</h2>${notes.length ? `<div class="grid detail-list">${notes.map(noteCard).join("")}</div>` : empty("note-pencil", "Este livro ainda nao tem fichas.")}`);
+    }
+    function deleteBook(id) { const b = getBook(id); if (!confirm(`Excluir "${b.titulo}"? As fichas vinculadas tambem serao excluidas.`)) return; state.books = state.books.filter(x => x.id !== id); state.notes = state.notes.filter(x => x.livroId !== id); toast("Livro excluido."); render(); }
+    function deleteNote(id) { if (!confirm("Excluir esta ficha?")) return; state.notes = state.notes.filter(x => x.id !== id); toast("Ficha excluida."); render(); }
+    function deleteTag(id) { const t = getTag(id), uses = tagUseCount(id); if (!confirm(uses ? `A tag "${t.nome}" tem ${uses} uso(s). Ao excluir, ela sera removida dos livros e fichas. Continuar?` : `Excluir a tag "${t.nome}"?`)) return; state.tags = state.tags.filter(x => x.id !== id); state.books.forEach(b => b.tags = b.tags.filter(x => x !== id)); state.notes.forEach(n => n.tags = n.tags.filter(x => x !== id)); toast("Tag excluida."); render(); }
+    function exportJson() { const blob = new Blob([JSON.stringify({ books: state.books, notes: state.notes, tags: state.tags, settings: state.settings }, null, 2)], { type: "application/json" }); const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "scriptorium-dados.json"; a.click(); URL.revokeObjectURL(a.href); toast("Exportacao iniciada."); }
+    function importJson(file) { const reader = new FileReader(); reader.onload = () => { try { const data = JSON.parse(reader.result); if (!Array.isArray(data.books) || !Array.isArray(data.notes) || !Array.isArray(data.tags)) throw new Error(); state.books = data.books; state.notes = data.notes; state.tags = data.tags; state.settings = { ...state.settings, ...(data.settings || {}) }; toast("Dados importados com sucesso."); render(); } catch { toast("Nao foi possivel importar. Verifique se o JSON e valido do Scriptorium."); } }; reader.readAsText(file); }
+    document.addEventListener("click", e => {
+      const tab = e.target.closest("[data-tab]"); if (tab) { state.settings.abaAtiva = tab.dataset.tab; render(); }
+      if (e.target.closest("#themeBtn")) { state.settings.tema = state.settings.tema === "dark" ? "light" : "dark"; render(); }
+      if (e.target.closest("#exportBtn")) exportJson();
+      if (e.target.closest("#focusSearchBtn")) $("#searchInput").focus();
+      if (e.target.closest("#fab")) $("#sheet").classList.add("open");
+      if (e.target === $("#sheet") || e.target.closest("[data-action='close']")) $("#sheet").classList.remove("open");
+      const action = e.target.closest("[data-action]")?.dataset.action;
+      if (action === "book") { $("#sheet").classList.remove("open"); openBookForm(); }
+      if (action === "note") { $("#sheet").classList.remove("open"); openNoteForm(); }
+      if (action === "tag") { $("#sheet").classList.remove("open"); openTagForm(); }
+      if (action === "import") { $("#sheet").classList.remove("open"); $("#importInput").click(); }
+      if (e.target.closest("[data-close-modal]") || e.target === $("#modalRoot")) closeModal();
+      if (e.target.closest("#clearFiltersBtn") || e.target.closest("#clearFiltersInline")) { state.filters = { author: "", genre: "", subgenre: "", status: "", book: "", type: "", tag: "" }; render(); }
+      const editBook = e.target.closest("[data-edit-book]")?.dataset.editBook, delBook = e.target.closest("[data-del-book]")?.dataset.delBook, detailBook = e.target.closest("[data-detail-book]")?.dataset.detailBook, editNote = e.target.closest("[data-edit-note]")?.dataset.editNote, delNote = e.target.closest("[data-del-note]")?.dataset.delNote, favNote = e.target.closest("[data-fav-note]")?.dataset.favNote, editTag = e.target.closest("[data-edit-tag]")?.dataset.editTag, delTag = e.target.closest("[data-del-tag]")?.dataset.delTag, author = e.target.closest("[data-author-filter]")?.dataset.authorFilter;
+      if (editBook) openBookForm(editBook); if (delBook) deleteBook(delBook); if (detailBook) openBookDetail(detailBook); if (editNote) openNoteForm(editNote); if (delNote) deleteNote(delNote);
+      if (favNote) { const n = state.notes.find(x => x.id === favNote); n.favorito = !n.favorito; n.atualizadoEm = now(); render(); }
+      if (editTag) openTagForm(editTag); if (delTag) deleteTag(delTag); if (author) { state.filters.author = author; state.settings.abaAtiva = "books"; render(); }
+    });
+    $("#searchInput").addEventListener("input", e => { state.search = e.target.value; renderContent(); renderActiveFilters(); save(); });
+    $("#sortSelect").addEventListener("change", e => { const tab = state.settings.abaAtiva, key = tab === "tags" ? "ordenacaoTags" : (tab === "notes" || tab === "favorites" ? "ordenacaoFichas" : "ordenacaoLivros"); state.settings[key] = e.target.value; render(); });
+    [["#filterAuthor", "author"], ["#filterGenre", "genre"], ["#filterSubgenre", "subgenre"], ["#filterStatus", "status"], ["#filterBook", "book"], ["#filterType", "type"], ["#filterTag", "tag"]].forEach(([sel, key]) => $(sel).addEventListener("change", e => { state.filters[key] = e.target.value; render(); }));
+    $("#importInput").addEventListener("change", e => { const file = e.target.files[0]; if (file) importJson(file); e.target.value = ""; });
+    render();
+  </script>
+</body>
+</html>
